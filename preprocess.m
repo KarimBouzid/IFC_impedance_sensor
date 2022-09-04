@@ -26,7 +26,7 @@ function [preproc] = preprocess(signal,Fs, threshold)
         lowPassBandStopWaveletBaseLineCorrectedSignal=filter(b,a,waveletBaseLineCorrectedSignal);
 
     % smooth filter
-        %smoothedLowPassBandStopWaveletBaseLineCorrectedSignal = smooth(waveletBaseLineCorrectedSignal,5);
+        smoothedLowPassBandStopWaveletBaseLineCorrectedSignal = smooth(lowPassBandStopWaveletBaseLineCorrectedSignal,3);
 
-preproc = waveletBaseLineCorrectedSignal';
+preproc = smoothedLowPassBandStopWaveletBaseLineCorrectedSignal;
 end

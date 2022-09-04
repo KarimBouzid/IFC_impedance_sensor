@@ -11,7 +11,9 @@ close all
 %rawData = readmatrix('SomeRecognitionTest.csv');
 %rawData = readmatrix('T1_47k_saltedwater_beads_TOPROCESS_single.csv'); %57.3s, 70.78, 70.51, 70.4, 71.07
 %rawData = readmatrix('T2_47k_saltedwater_beads_TOPROCESS_Best_single.csv'); %T2_47k_best -> 16.638s
-rawData = readmatrix('Correlation_180um_1MHz_7.csv'); %7210 great double peaks shape; 1min20 à 1min29 ->5 beads and a change of flow
+%rawData = readmatrix('Correlation_180um_1MHz_7.csv'); %7210 great double peaks shape; 1min20 à 1min29 ->5 beads and a change of flow
+%rawData = readmatrix('67um_DATASET7.csv');
+rawData = readmatrix('buccal2.csv');
 
 %T9 is pretty good. Classify bubbles and beads with it. Z1 ->middle
 %electrode; Z2 ->side electrode. The last ones (6-7-8) are better since I used a
@@ -111,6 +113,13 @@ newI2 = sqrt((r2.^2)+(ima2.^2));
 yImp2 = Rg.*Vin2*Gbuf*Gain/2./newI2;
 impP2 = 180/pi*atan2(ima2,r2);
 
+%% Rescale to the minimum of Z1 or Z2
+if mean(yImp1) > mean(yImp2)
+    yImp1 = yImp1.*(mean(yImp2)/mean(yImp1));
+else
+    yImp2 = yImp2.*(mean(yImp1)/mean(yImp2));
+end
+
 %% Impedance Amplitude and Phase
 figure   
 subplot(2,2,1);
@@ -141,7 +150,7 @@ T = table(t, yImp1preproc, yImp2preproc, impP1preproc, impP2preproc);
 T.Properties.VariableNames = {'Time' 'Impedance magnitude of 1th pair of electrodes' 'Impedance magnitude of 2nd pair of electrodes'...
     'Phase1' 'Phase 2'};
 T.Properties.VariableUnits = {'s' 'Ohm' 'Ohm' 'Deg' 'Deg'};
-writetable(T,'47-PreprocessedNonSegmented7.csv')
+writetable(T,'47-PreprocessedNonSegmented4.csv')
 
 %% Impedance Amplitude and Phase difference
 figure   
@@ -219,21 +228,20 @@ grid on; grid minor;
 [pks2,locs2] = findpeaks(yImp2preproc-yImp1preproc, 'MinPeakProminence',250,'MinPeakHeight',80, 'MinPeakDistance',11);
 
 figure
-findpeaks(yImp1preproc-yImp2preproc,'MinPeakProminence',150,'MinPeakHeight',50);
+findpeaks(yImp1preproc-yImp2preproc,'MinPeakProminence',250,'MinPeakHeight',80, 'MinPeakDistance',11);
 hold on
-findpeaks(yImp2preproc-yImp1preproc,'MinPeakProminence',150,'MinPeakHeight',50);
+findpeaks(yImp2preproc-yImp1preproc,'MinPeakProminence',250,'MinPeakHeight',80, 'MinPeakDistance',11);
 hold off
 
 %% Segmentation
 if length(locs1)<length(locs2)
     smallLocs = locs1; bigLocs = locs2;
-    smallPks = pks1;   bigPks = pks2;
+    smallPks = pks1;   bigPks = -pks2;
 else
     smallLocs = locs2; bigLocs = locs1;
-    smallPks = pks2;   bigPks = pks1;
+    smallPks = pks2;   bigPks = -pks1;
 
 end
-clear pks1 pks2 locs1 locs2
 
 smallLocsNew = zeros(size(smallLocs));
 smallPksNew = zeros(size(smallPks));
@@ -244,7 +252,7 @@ for k=1:numel(smallLocs)
 end
 
 figure
-plot(smallLocs,-smallPks, '.k', 'MarkerSize',15)
+plot(smallLocs,smallPks, '.k', 'MarkerSize',15)
 hold on
 plot(smallLocsNew,smallPksNew, '.k', 'MarkerSize',15)
 plot(yImp1preproc-yImp2preproc,'r.-');
